@@ -1,2 +1,2 @@
-# altin
-Altın gram birikim simülasyonu
+# Gram Birikim
+https://ermetasarim.github.io/altin/

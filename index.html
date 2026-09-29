@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="tr"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gram Birikim | Pars Studio</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#070b12;--p:#10182a;--line:rgba(255,255,255,.08);--t:#e8eef8;--m:#8b9bb4;--a:#f5c15d}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 80% 0,rgba(245,193,93,.12),transparent 32%),var(--bg);color:var(--t);font-family:"IBM Plex Sans",sans-serif}
+.wrap{width:min(980px,calc(100% - 28px));margin:auto;padding:28px 0 60px}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+h1{margin:0;font-size:20px}.sub{color:var(--m);font-size:12px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0}
+.card{background:linear-gradient(180deg,#121b2e,#0e1626);border:1px solid var(--line);border-radius:16px;padding:16px}
+.card b{display:block;font-size:11px;color:var(--m)}.val{font-family:"IBM Plex Mono",monospace;font-size:22px;margin-top:4px;color:var(--a)}
+.form{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+label{font-size:11px;color:var(--m);display:block;margin-bottom:4px}
+input,.btn{background:var(--p);border:1px solid var(--line);color:var(--t);border-radius:10px;padding:10px;width:100%;font-family:inherit}
+.btn{cursor:pointer;font-weight:700;width:auto;text-decoration:none;display:inline-block}
+.grid{display:grid;grid-template-columns:1.3fr .7fr;gap:12px;margin-top:12px}
+@media(max-width:800px){.kpis,.form,.grid{grid-template-columns:1fr 1fr}}
+</style></head>
+<body>
+<div class="wrap">
+  <header><div><h1>GRAM BIRIKIM</h1><div class="sub">Aylik altin alim simulasyonu</div></div>
+  <a class="btn" href="https://ermetasarim.github.io/projeler/">Portfoy</a></header>
+  <div class="card"><div class="form">
+    <div><label>Gram fiyati (TL)</label><input id="fiyat" type="number" value="4850"></div>
+    <div><label>Aylik alim (TL)</label><input id="aylik" type="number" value="5000"></div>
+    <div><label>Sure (yil)</label><input id="yil" type="number" value="5"></div>
+    <div><label>Yillik fiyat artisi %</label><input id="enflasyon" type="number" value="25"></div>
+  </div><p class="sub" id="live" style="margin:10px 0 0">Canli fiyat cekiliyor...</p></div>
+  <div class="kpis">
+    <div class="card"><b>TOPLAM ODENEN</b><div class="val" id="kOde">-</div></div>
+    <div class="card"><b>BIRIKEN GRAM</b><div class="val" id="kGram">-</div></div>
+    <div class="card"><b>BITIS DEGERI</b><div class="val" id="kDeg">-</div></div>
+    <div class="card"><b>KAZANC</b><div class="val" id="kKaz">-</div></div>
+  </div>
+  <div class="grid"><div class="card"><canvas id="c"></canvas></div><div class="card" id="not"></div></div>
+</div>
+<script>
+const tl=n=>n.toLocaleString("tr-TR",{maximumFractionDigits:0})+" TL";
+let chart;
+function calc(){
+  let p=+fiyat.value||0, pay=+aylik.value||0, years=+yil.value||1, inf=(+enflasyon.value||0)/100;
+  let gram=0, ode=0, labels=[], values=[];
+  const months=years*12;
+  for(let i=1;i<=months;i++){ gram += p? pay/p : 0; ode += pay; if(i%12===0) p *= (1+inf); if(i%12===0 || i===months){labels.push("Y"+Math.ceil(i/12)); values.push(gram*p)} }
+  kOde.textContent=tl(ode); kGram.textContent=gram.toFixed(2)+" g"; kDeg.textContent=tl(gram*p); kKaz.textContent=tl(gram*p-ode);
+  not.innerHTML=`<b>Okuma</b><p class="sub">${years} yilda her ay ${tl(pay)} ayirinca ${gram.toFixed(1)} gram birikir. Yatirim tavsiyesi degildir.</p>`;
+  if(chart) chart.destroy();
+  chart=new Chart(c,{type:"line",data:{labels,datasets:[{label:"Portfoy TL",data:values,borderColor:"#f5c15d",tension:.3}]},options:{plugins:{legend:{labels:{color:"#8b9bb4"}}},scales:{x:{ticks:{color:"#8b9bb4"}},y:{ticks:{color:"#8b9bb4"}}}}});
+}
+["fiyat","aylik","yil","enflasyon"].forEach(id=>document.getElementById(id).oninput=calc); calc();
+fetch("https://finans.truncgil.com/v4/today.json").then(r=>r.json()).then(d=>{
+  const g=d["gram-altin"]||d.GRAALTIN; const val=g && parseFloat(String(g.Selling||g.selling||g.satis||g).replace(",","."));
+  if(val){fiyat.value=Math.round(val); live.textContent="Anlik gram satis: "+tl(val); calc()} else live.textContent="Canli fiyat yok, elle gir.";
+}).catch(()=>live.textContent="Canli fiyat yok, elle gir.");
+</script></body></html>
